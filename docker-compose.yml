@@ -1,0 +1,60 @@
+version: "3"
+services:
+    nginx:
+        image: nginx:1.21
+        container_name: nginx
+        networks:
+            - lnmp
+        depends_on:
+            - php
+        ports:
+            - "80:80"
+            - "443:443"
+        expose:
+            - "80"
+            - "443"
+        volumes:
+            - ./nginx/html:/usr/share/html # nginx web 根目录
+            - ./nginx/conf.d:/etc/nginx/conf.d # 配置目录
+            - ./nginx/log:/var/log/nginx # 日志目录
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf # 主配置
+            - ./nginx/cert:/etc/nginx/cert # ssl 证书目录
+            - /usr/share/zoneinfo/Asia/Shanghai:/etc/localtime # 时区
+            - ./nginx/cache:/usr/share/cache # 缓存目录
+            - phpsocket:/run/php # php socket 目录
+        links:
+            - php
+    php:
+        image: typecho-php:8.0-fpm
+        container_name: php
+        volumes:
+            - ./nginx/html:/usr/share/html # nginx web 根目录
+            - ./php/conf/php/conf.d:/usr/local/etc/php/conf.d # 配置目录
+            - ./php/conf/php/php.ini:/usr/local/etc/php/php.ini # 配置目录
+            - ./php/conf/php/zz-docker.conf:/usr/local/etc/php-fpm.d/zz-docker.conf # 配置php socket
+            - phpsocket:/run/php # php socket 目录
+        networks:
+            - lnmp
+        depends_on:
+            - mysql
+    mysql:
+        image: mysql:5.7
+        container_name: mysql
+        volumes:
+            - ./mysql/conf/my.cnf:/etc/mysql/my.cnf # 配置
+            - ./mysql/data:/var/lib/mysql # 数据目录
+        environment:
+            MYSQL_ROOT_PASSWORD: hvCtCPRtYez0rX # 改为自定义密码
+            TZ: Asia/Shanghai # 时区
+        networks:
+            - lnmp
+        expose:
+            - "3306"
+        ports:
+            - "3306:3306"
+
+networks:
+    lnmp:
+
+volumes:
+  phpsocket:
